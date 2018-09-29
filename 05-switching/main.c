@@ -48,7 +48,7 @@ void handle_packet(iface_info_t *iface, char *packet, int len)
 	else
 		broadcast_packet(iface, packet, len);
 	insert_mac_port(eh->ether_shost, iface);
-	dump_mac_port_table();
+	// dump_mac_port_table();
 }
 
 // open the interface to read all the necessary information
