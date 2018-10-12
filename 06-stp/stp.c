@@ -168,17 +168,10 @@ static void stp_handle_config_packet(stp_t *stp, stp_port_t *p,
 				root = i;
 				break;
 			}
+			// There is no root_port.
 			if (i == stp->nports - 1) has_root = 0;
 		}
-		for (int i = 0; i < stp->nports; i++) {
-			if (!has_root) {
-				// This is root node.
-				stp->root_port = NULL;
-				stp->designated_root = stp->switch_id;
-				stp->root_path_cost = 0;
-				break;
-			}
-			if (i == root) continue;
+		for (int i = root + 1; i < stp->nports; i++) {
 			if (stp_port_is_designated(&(stp->ports[i]))) continue;
 			int pri = 1;
 			if (stp->ports[i].designated_root > stp->ports[root].designated_root)          pri = 0;
@@ -188,10 +181,14 @@ static void stp_handle_config_packet(stp_t *stp, stp_port_t *p,
 			else if (stp->ports[i].designated_switch > stp->ports[root].designated_switch) pri = 0;
 			else if (stp->ports[i].designated_switch < stp->ports[root].designated_switch) pri = 1;
 			else if (stp->ports[i].designated_port > stp->ports[root].designated_port)     pri = 0;
-			if (pri)
-				root = i;
+			if (pri) root = i;
 		}
-		if (has_root) {
+		if (!has_root) {
+			// This is root node.
+			stp->root_port = NULL;
+			stp->designated_root = stp->switch_id;
+			stp->root_path_cost = 0;
+		} else {
 			stp->root_port = &(stp->ports[root]);
 			stp->designated_root = stp->root_port->designated_root;
 			stp->root_path_cost = stp->root_port->designated_cost + stp->root_port->path_cost;
