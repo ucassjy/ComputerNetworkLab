@@ -45,6 +45,8 @@ void handle_ip_packet(iface_info_t *iface, char *packet, int len)
 		u8 type = (u8)*(packet + ETHER_HDR_SIZE + IP_HDR_SIZE(ip));
 		if (type == ICMP_ECHOREQUEST) {
 			icmp_send_packet(packet, len, ICMP_ECHOREPLY, 0);
+		} else {
+			free(packet);
 		}
 	}
 	else {
