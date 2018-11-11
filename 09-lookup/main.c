@@ -55,15 +55,17 @@ u8 lookup_pref_tree(Tree tr, u32 ip) {
 	TNode *node = tr;
 	TNode *node_tmp = NULL;
 	for (int i = 0; node; i++) {
-		if (ip & (ip1 >> i)) {
-			node_tmp = node;
-			node = node->RNode;
-		} else {
-			node_tmp = node;
-			node = node->LNode;
-		}
+		node_tmp = node;
+		node = (ip & (ip1 >> i)) ? node->RNode : node->LNode;
 	}
 	return node_tmp->port;
+}
+
+// To count nodes in the basic prefix tree.
+void count_nodes(Tree tr, int* nodes) {
+	if (tr->LNode) count_nodes(tr->LNode, nodes);
+	if (tr->RNode) count_nodes(tr->RNode, nodes);
+	*nodes = *nodes + 1;
 }
 
 // To achieve leaf pushing for two-bit prefix tree
@@ -185,39 +187,39 @@ u8 lookup_pref_tree_pro(Tree_pro tr, u32 ip) {
 	TNode_pro *node = tr;
 	TNode_pro *node_tmp = NULL;
 	for (int i = 0; node; i++) {
+		node_tmp = node;
 		if (ip & (ip1 >> i)) {
-			node_tmp = node;
-			if (ip & (ip1 >> ++i)) {
-				node = node->RRNode;
-			} else {
-				node = node->RLNode;
-			}
+			node = (ip & (ip1 >> ++i)) ? node->RRNode : node->RLNode;
 		} else {
-			node_tmp = node;
-			if (ip & (ip1 >> ++i)) {
-				node = node->LRNode;
-			} else {
-				node = node->LLNode;
-			}
+			node = (ip & (ip1 >> ++i)) ? node->LRNode : node->LLNode;
 		}
 	}
 	return node_tmp->port;
 }
 
+// To count nodes in the two-bit prefix tree.
+void count_nodes_pro(Tree_pro tr, int* nodes) {
+	if(tr->LLNode) count_nodes_pro(tr->LLNode, nodes);
+	if(tr->LRNode) count_nodes_pro(tr->LRNode, nodes);
+	if(tr->RLNode) count_nodes_pro(tr->RLNode, nodes);
+	if(tr->RRNode) count_nodes_pro(tr->RRNode, nodes);
+	*nodes = *nodes + 1;
+}
+
 // To build the two-bit prefix tree with pointer and vector compress by two-bit prefix tree with leaf pushing.
 void build_pref_tree_comp(Tree_pro tr2, Tree_comp tr3){
-	tr3->type[0] = (tr2->LLNode->LLNode)? 1 : 0;
-	tr3->type[1] = (tr2->LRNode->LLNode)? 1 : 0;
-	tr3->type[2] = (tr2->RLNode->LLNode)? 1 : 0;
-	tr3->type[3] = (tr2->RRNode->LLNode)? 1 : 0;
-	int num_inter = tr3->type[0] + tr3->type[1] + tr3->type[2] + tr3->type[3];
+	tr3->type = (tr2->LLNode->LLNode)? 1 : 0;
+	tr3->type = tr3->type << 1 | ((tr2->LRNode->LLNode)? 1 : 0);
+	tr3->type = tr3->type << 1 | ((tr2->RLNode->LLNode)? 1 : 0);
+	tr3->type = tr3->type << 1 | ((tr2->RRNode->LLNode)? 1 : 0);
+	int num_inter = __builtin_popcount(tr3->type);
 	int num_leaf = 4 - num_inter;
 	tr3->ptr_0 = (TNode_comp*)malloc(num_leaf * sizeof(TNode_comp));
 	tr3->ptr_1 = (TNode_comp*)malloc(num_inter * sizeof(TNode_comp));
 	int i_inter = 0;
 	int i_leaf = 0;
 	for (int i = 0; i < 4; i++) {
-		if (tr3->type[i]) {
+		if (tr3->type & (1 << i)) {
 			build_pref_tree_comp(i_to_node(tr2, i), &(tr3->ptr_1[i_inter]));
 			i_inter++;
 		} else {
@@ -234,61 +236,69 @@ u8 lookup_pref_tree_comp(Tree_comp tr, u32 ip) {
 	for (int i = 0; ; i++) {
 		if (ip & (ip1 >> i)) {
 			if (ip & (ip1 >> ++i)) {
-				if (node->type[3]) {
-					int t1 = node->type[0] + node->type[1] + node->type[2];
-					node = &(node->ptr_1[t1]);
+				if (node->type & 1) {
+					node = &(node->ptr_1[0]);
 				} else {
-					int t1 = 3 - node->type[0] + node->type[1] + node->type[2];
-					node = &(node->ptr_0[t1]);
-					break;
+					return node->ptr_0[0].port;
 				}
 			} else {
-				if (node->type[2]) {
-					int t1 = node->type[0] + node->type[1];
+				int t1 = __builtin_popcount(node->type & 1);
+				if (node->type & 2) {
 					node = &(node->ptr_1[t1]);
 				} else {
-					int t1 = 2 - node->type[0] + node->type[1];
-					node = &(node->ptr_0[t1]);
-					break;
+					return node->ptr_0[1 - t1].port;
 				}
 			}
 		} else {
 			if (ip & (ip1 >> ++i)) {
-				if (node->type[1]) {
-					int t1 = node->type[0];
+				int t1 = __builtin_popcount(node->type & 3);
+				if (node->type & 4) {
 					node = &(node->ptr_1[t1]);
 				} else {
-					int t1 = 1 - node->type[0];
-					node = &(node->ptr_0[t1]);
-					break;
+					return node->ptr_0[2 - t1].port;
 				}
 			} else {
-				if (node->type[0]) {
-					node = &(node->ptr_1[0]);
+				int t1 = __builtin_popcount(node->type & 7);
+				if (node->type & 8) {
+					node = &(node->ptr_1[t1]);
 				} else {
-					node = &(node->ptr_0[0]);
-					break;
+					return node->ptr_0[3 - t1].port;
 				}
 			}
 		}
 	}
-	return node->port;
+}
+
+// To count nodes in the two-bit prefix tree with pointer and vector compress.
+void count_nodes_comp(Tree_comp tr, int* nodes) {
+	int num_inter = __builtin_popcount(tr->type);
+	for (int i = 0; i < num_inter; i++) {
+		count_nodes_comp(&(tr->ptr_1[i]), nodes);
+	}
+	*nodes = *nodes + 4 - num_inter;
 }
 
 int main() {
 	Tree tr1 = (Tree)malloc(sizeof(TNode));
 	Tree_pro tr2 = (Tree_pro)malloc(sizeof(TNode_pro));
 	Tree_comp tr3 = (Tree_comp)malloc(sizeof(TNode_comp));
+	int nodes = 0;
 	switch (TREE_TYPE) {
 		case 0 :
 			build_pref_tree(tr1);
+			count_nodes(tr1, &nodes);
+			printf("For all ips in forwarding-table.txt, %s has %d nodes, takes %ld B.\n", tree_s, nodes, sizeof(TNode) * nodes);
 			break;
 		case 1 :
 			build_pref_tree_pro(tr2);
+			count_nodes_pro(tr2, &nodes);
+			printf("For all ips in forwarding-table.txt, %s has %d nodes, takes %ld B.\n", tree_s, nodes, sizeof(TNode_pro) * nodes);
 			break;
 		default :
 			build_pref_tree_pro(tr2);
 			build_pref_tree_comp(tr2, tr3);
+			count_nodes_comp(tr3, &nodes);
+			printf("For all ips in forwarding-table.txt, %s has %d nodes, takes %ld B.\n", tree_s, nodes, sizeof(TNode_comp) * nodes);
 	}
 
 	FILE *fp = fopen(testname, "r");

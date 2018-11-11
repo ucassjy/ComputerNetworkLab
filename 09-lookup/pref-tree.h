@@ -17,7 +17,7 @@ typedef struct TNode_pro {
 } TNode_pro, *Tree_pro;
 
 typedef struct TNode_comp {
-	u8 type[4];
+	u8 type;
 	u8 port;
 	struct TNode_comp *ptr_0, *ptr_1;
 } TNode_comp, *Tree_comp;
@@ -28,11 +28,11 @@ typedef struct ip_info {
 	u8 port;
 } ip_info;
 
-#define i_to_node(tr, i) ((i == 0)? tr->LLNode: \
-						 (i == 1)? tr->LRNode: \
-						 (i == 2)? tr->RLNode:tr->RRNode)
+#define i_to_node(tr, i) ((i == 0)? tr->RRNode: \
+						 (i == 1)? tr->RLNode: \
+						 (i == 2)? tr->LRNode:tr->LLNode)
 
-#define TREE_TYPE 0
+#define TREE_TYPE 1
 char *tree_s = (TREE_TYPE == 0)? "pref_tree" : \
 		   (TREE_TYPE == 1)? "pref_tree_pro" : "pref_tree_comp";
 
