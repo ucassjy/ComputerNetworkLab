@@ -175,7 +175,6 @@ void build_pref_tree_pro(Tree_pro tr) {
 		} else {
 			node->port = ii->port;
 		}
-		node = tr;
 	}
 	fclose(fp);
 	leaf_push(tr);
@@ -275,7 +274,7 @@ void count_nodes_comp(Tree_comp tr, int* nodes) {
 	for (int i = 0; i < num_inter; i++) {
 		count_nodes_comp(&(tr->ptr_1[i]), nodes);
 	}
-	*nodes = *nodes + 4 - num_inter;
+	*nodes = *nodes + 1 + 4 - num_inter;
 }
 
 int main() {

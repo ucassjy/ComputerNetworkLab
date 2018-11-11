@@ -29,8 +29,8 @@ typedef struct ip_info {
 } ip_info;
 
 #define i_to_node(tr, i) ((i == 0)? tr->RRNode: \
-						 (i == 1)? tr->RLNode: \
-						 (i == 2)? tr->LRNode:tr->LLNode)
+						  (i == 1)? tr->RLNode: \
+						  (i == 2)? tr->LRNode:tr->LLNode)
 
 #define TREE_TYPE 1
 char *tree_s = (TREE_TYPE == 0)? "pref_tree" : \
