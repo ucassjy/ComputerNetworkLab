@@ -52,6 +52,7 @@ void tcp_process(struct tcp_sock *tsk, struct tcp_cb *cb, char *packet)
 		case TCP_RST:
 			tcp_set_state(tsk, TCP_CLOSED);
 			tcp_unhash(tsk);
+			break;
 		case TCP_SYN:
 			if (TCP_LISTEN == tsk->state) {
 				struct tcp_sock *child_sock = alloc_tcp_sock();

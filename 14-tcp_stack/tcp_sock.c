@@ -338,7 +338,6 @@ struct tcp_sock *tcp_sock_accept(struct tcp_sock *tsk)
 	}
 
 	struct tcp_sock *csk = tcp_sock_accept_dequeue(tsk);
-
 	return csk;
 }
 
