@@ -363,7 +363,7 @@ int tcp_sock_read(struct tcp_sock *tsk, char *buf, int len) {
 	pthread_mutex_lock(&tsk->rcv_buf->lock);
 	int res = read_ring_buffer(tsk->rcv_buf, buf, len);
 	pthread_mutex_unlock(&tsk->rcv_buf->lock);
-	tsk->rcv_wnd += res;
+	tsk->rcv_wnd = ring_buffer_free(tsk->rcv_buf);
 	if (0 == res && TCP_CLOSE_WAIT == tsk->state) return -1;
 	return res;
 }

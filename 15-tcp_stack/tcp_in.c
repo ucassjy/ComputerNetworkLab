@@ -99,7 +99,7 @@ void tcp_process(struct tcp_sock *tsk, struct tcp_cb *cb, char *packet)
 				pthread_mutex_lock(&tsk->rcv_buf->lock);
 				write_ring_buffer(tsk->rcv_buf, cb->payload, cb->pl_len);
 				pthread_mutex_unlock(&tsk->rcv_buf->lock);
-				tsk->rcv_wnd -= cb->pl_len;
+				tsk->rcv_wnd = ring_buffer_free(tsk->rcv_buf);
 				tcp_send_control_packet(tsk, TCP_ACK);
 			}
 			break;
