@@ -83,13 +83,13 @@ void tcp_process(struct tcp_sock *tsk, struct tcp_cb *cb, char *packet)
 			}
 			break;
 		case TCP_ACK:
-				list_for_each_entry_safe(sndb, q, &tsk->snd_buffer, list) {
-					if (sndb->seq_end <= cb->ack) {
-						if (sndb->packet)
-							free(sndb->packet);
-						list_delete_entry(&sndb->list);
-					}
+			list_for_each_entry_safe(sndb, q, &tsk->snd_buffer, list) {
+				if (sndb->seq_end <= cb->ack) {
+					if (sndb->packet)
+						free(sndb->packet);
+					list_delete_entry(&sndb->list);
 				}
+			}
 			update_timer(tsk);
 			if (TCP_SYN_RECV == tsk->state) {
 				list_delete_entry(&tsk->list);
@@ -118,7 +118,6 @@ void tcp_process(struct tcp_sock *tsk, struct tcp_cb *cb, char *packet)
 				write_ring_buffer(tsk->rcv_buf, cb->payload, cb->pl_len);
 				pthread_mutex_unlock(&tsk->rcv_buf->lock);
 				tsk->rcv_wnd = ring_buffer_free(tsk->rcv_buf);
-				tcp_send_control_packet(tsk, TCP_ACK);
 				struct rcv_win *rcvw, *q;
 				list_for_each_entry_safe(rcvw, q, &tsk->rcv_ofo_buffer, list) {
 					if (rcvw->seq_num == tsk->rcv_nxt) {
@@ -126,10 +125,12 @@ void tcp_process(struct tcp_sock *tsk, struct tcp_cb *cb, char *packet)
 						write_ring_buffer(tsk->rcv_buf, rcvw->packet, rcvw->len);
 						pthread_mutex_unlock(&tsk->rcv_buf->lock);
 						tsk->rcv_wnd = ring_buffer_free(tsk->rcv_buf);
+						tsk->rcv_nxt += rcvw->len;
 					}
 					free(rcvw->packet);
 					list_delete_entry(&rcvw->list);
 				}
+				tcp_send_control_packet(tsk, TCP_ACK);
 			}
 			break;
 		case TCP_FIN | TCP_ACK:
